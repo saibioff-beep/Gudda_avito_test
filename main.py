@@ -85,7 +85,7 @@ def get_approved_user_menu() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="📍 Мои филиалы / Адреса", callback_data="user:my_stores")],
         [InlineKeyboardButton(text="💬 Мои быстрые ответы", callback_data="user:quick_replies")],
         [InlineKeyboardButton(text="📦 Управление заказами", callback_data="user:orders")],
-        [InlineKeyboardButton(text="🔔 Активные уведомления (позже)", callback_data="user:notifications")],
+        [InlineKeyboardButton(text="👤 Мой профиль", callback_data="user:profile")],
         [InlineKeyboardButton(text="🔄 Обновить меню", callback_data="user:menu")]
     ])
 
@@ -179,6 +179,10 @@ async def cmd_start(message: Message, state: FSMContext):
         print("[DEBUG cmd_start] → Owner branch")
         await message.answer(
             "👋 Привет, владелец!\n\nТы имеешь полный доступ. Используй /admin",
+            reply_markup=get_persistent_menu()
+        )
+        await message.answer(
+            "Выберите действие:",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text="⚙️ Админ-меню", callback_data="admin:menu")]
             ])
