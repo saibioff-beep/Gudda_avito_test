@@ -123,6 +123,16 @@ def get_stores_toggle_keyboard(user_id: int, stores: list, subscribed_ids: set) 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 # ===================== Обработчики =====================
+@dp.message(Command("menu"))
+async def cmd_menu(message: Message):
+    user = await db.get_user(message.from_user.id)
+    if user and user["status"] == "approved":
+        await message.answer("Главное меню:", reply_markup=get_persistent_menu())
+        await message.answer("Выберите раздел:", reply_markup=get_approved_user_menu())
+    else:
+        await message.answer("У тебя пока нет доступа. Напиши /start для регистрации.")
+
+
 @dp.message(Command("help"))
 async def cmd_help(message: Message):
     user_id = message.from_user.id
@@ -142,6 +152,7 @@ async def cmd_help(message: Message):
             "• Выбор филиалов, по которым получать уведомления\n\n"
             "<b>Команды:</b>\n"
             "• /start — запуск и регистрация\n"
+            "• /menu — показать главное меню\n"
             "• /help — эта справка\n"
             "• /admin — панель администратора (только для владельца и админов)\n\n"
             "<b>Для администратора:</b>\n"
@@ -155,6 +166,10 @@ async def cmd_help(message: Message):
             "📖 <b>Справка</b>\n\n"
             "Напиши /start, чтобы начать регистрацию.\n"
             "После одобрения администратором ты получишь доступ к боту.\n\n"
+            "Команды:\n"
+            "• /start — регистрация\n"
+            "• /menu — главное меню (после одобрения)\n"
+            "• /help — эта справка\n\n"
             "Бот помогает сотрудникам быстро работать с сообщениями и заказами на Авито.\n\n"
             "────────────────────\n"
             "<i>create by saibioff n Grok X AI</i>\n"
@@ -183,7 +198,7 @@ async def handle_persistent_profile(message: Message):
     )
 
 
-@dp.message(F.text == "Хелп")
+@dp.message(F.text == "❓ Хелп")
 async def handle_persistent_help(message: Message):
     await cmd_help(message)
 
