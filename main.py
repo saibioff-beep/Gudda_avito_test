@@ -182,7 +182,7 @@ async def cmd_help(message: Message):
 # ===================== ОБРАБОТЧИКИ ПОСТОЯННОЙ КЛАВИАТУРЫ =====================
 @dp.message(F.text == "Меню")
 async def handle_persistent_menu(message: Message):
-    await message.answer("Главное меню:", reply_markup=get_approved_user_menu())
+    await cmd_menu(message)
 
 
 @dp.message(F.text == "👤 Мой профиль")
@@ -504,7 +504,8 @@ async def approve_user(callback: CallbackQuery):
         await bot.send_message(
             target_id,
             "🎉 Поздравляем! Владелец одобрил твой доступ к боту.\n"
-            "Теперь ты можешь пользоваться всеми функциями."
+            "Теперь ты можешь пользоваться всеми функциями.\n"
+            "Выполните команду /menu"
         )
     except Exception as e:
         logger.warning(f"Не удалось уведомить пользователя {target_id}: {e}")
@@ -534,8 +535,8 @@ async def deny_user(callback: CallbackQuery):
 
 @dp.message(Command("admin"))
 async def cmd_admin(message: Message):
-    if not await db.is_owner(message.from_user.id):
-        await message.answer("🚫 Эта команда только для владельца.")
+    if not await db.is_owner(message.from_user.id) and not await db.is_admin(message.from_user.id):
+        await message.answer("🚫 Эта команда только для владельца и администраторов.")
         return
 
     await message.answer(
