@@ -125,7 +125,15 @@ def get_stores_toggle_keyboard(user_id: int, stores: list, subscribed_ids: set) 
 # ===================== Обработчики =====================
 @dp.message(Command("menu"))
 async def cmd_menu(message: Message):
-    user = await db.get_user(message.from_user.id)
+    user_id = message.from_user.id
+    user = await db.get_user(user_id)
+    
+    # Разрешаем владельцу и админам всегда
+    if await db.is_owner(user_id) or await db.is_admin(user_id):
+        await message.answer("Главное меню:", reply_markup=get_persistent_menu())
+        await message.answer("Выберите раздел:", reply_markup=get_approved_user_menu())
+        return
+    
     if user and user["status"] == "approved":
         await message.answer("Главное меню:", reply_markup=get_persistent_menu())
         await message.answer("Выберите раздел:", reply_markup=get_approved_user_menu())
@@ -240,11 +248,11 @@ async def cmd_start(message: Message, state: FSMContext):
     if existing_user:
         print(f"[DEBUG cmd_start] → Existing user, status={existing_user['status']}")
         if existing_user["status"] == "approved":
+            await state.clear()  # очищаем любое старое состояние
             await message.answer(
                 "Главное меню:",
                 reply_markup=get_persistent_menu()
             )
-            # Показываем основное inline меню
             await message.answer(
                 "Выберите раздел:",
                 reply_markup=get_approved_user_menu()
@@ -535,7 +543,8 @@ async def deny_user(callback: CallbackQuery):
 
 @dp.message(Command("admin"))
 async def cmd_admin(message: Message):
-    if not await db.is_owner(message.from_user.id) and not await db.is_admin(message.from_user.id):
+    user_id = message.from_user.id
+    if not await db.is_owner(user_id) and not await db.is_admin(user_id):
         await message.answer("🚫 Эта команда только для владельца и администраторов.")
         return
 
