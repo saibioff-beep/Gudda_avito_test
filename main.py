@@ -100,6 +100,7 @@ def get_approved_user_menu() -> InlineKeyboardMarkup:
     """Главное меню для одобренных пользователей"""
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📍 Мои филиалы / Адреса", callback_data="user:my_stores")],
+        [InlineKeyboardButton(text="✉️ Непрочитанные сообщения Авито", callback_data="user:unread_avito")],
         [InlineKeyboardButton(text="💬 Мои быстрые ответы", callback_data="user:quick_replies")],
         [InlineKeyboardButton(text="📦 Управление заказами", callback_data="user:orders")],
         [InlineKeyboardButton(text="👤 Мой профиль", callback_data="user:profile")],
