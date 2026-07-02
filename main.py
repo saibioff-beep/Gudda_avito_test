@@ -51,9 +51,25 @@ def get_persistent_menu() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
             [
-                KeyboardButton(text="Меню"),
-                KeyboardButton(text="Мой профиль"),
-                KeyboardButton(text="Хелп")
+                KeyboardButton(text="📋 Меню"),
+                KeyboardButton(text="👤 Мой профиль"),
+                KeyboardButton(text="❓ Хелп")
+            ]
+        ],
+        resize_keyboard=True,
+        persistent=True
+    )
+
+
+def get_admin_persistent_menu() -> ReplyKeyboardMarkup:
+    """Постоянная клавиатура только для админов и владельца"""
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [
+                KeyboardButton(text="📋 Меню"),
+                KeyboardButton(text="👤 Мой профиль"),
+                KeyboardButton(text="❓ Хелп"),
+                KeyboardButton(text="⚙️ Админ-меню")
             ]
         ],
         resize_keyboard=True,
@@ -129,14 +145,20 @@ async def cmd_help(message: Message):
             "• /help — эта справка\n"
             "• /admin — панель администратора (только для владельца и админов)\n\n"
             "<b>Для администратора:</b>\n"
-            "Управление пользователями, филиалами, рассылками и статистикой."
+            "Управление пользователями, филиалами, рассылками и статистикой.\n\n"
+            "────────────────────\n"
+            "<i>create by saibioff n Grok X AI</i>\n"
+            "<i>Version: V1.3 beta</i>"
         )
     else:
         text = (
             "📖 <b>Справка</b>\n\n"
             "Напиши /start, чтобы начать регистрацию.\n"
             "После одобрения администратором ты получишь доступ к боту.\n\n"
-            "Бот помогает сотрудникам быстро работать с сообщениями и заказами на Авито."
+            "Бот помогает сотрудникам быстро работать с сообщениями и заказами на Авито.\n\n"
+            "────────────────────\n"
+            "<i>create by saibioff n Grok X AI</i>\n"
+            "<i>Version: V1.3 beta</i>"
         )
 
     await message.answer(text, parse_mode="HTML")
@@ -148,13 +170,15 @@ async def handle_persistent_menu(message: Message):
     await message.answer("Главное меню:", reply_markup=get_approved_user_menu())
 
 
-@dp.message(F.text == "Мой профиль")
+@dp.message(F.text == "👤 Мой профиль")
 async def handle_persistent_profile(message: Message):
-    # Временная заглушка. Полноценный профиль сделаем позже
     await message.answer(
-        "👤 **Мой профиль**\n\n"
-        "Здесь будет отображаться ваша информация и рейтинг.\n"
-        "(Функция в разработке)",
+        "👤 **Мой профиль** (в разработке)\n\n"
+        "Здесь будет:\n"
+        "• ФИО, точка, телефон\n"
+        "• Количество отвеченных сообщений\n"
+        "• Твоё место в рейтинге\n"
+        "• Топ-10 пользователей",
         parse_mode="Markdown"
     )
 
@@ -162,6 +186,14 @@ async def handle_persistent_profile(message: Message):
 @dp.message(F.text == "Хелп")
 async def handle_persistent_help(message: Message):
     await cmd_help(message)
+
+
+@dp.message(F.text == "⚙️ Админ-меню")
+async def handle_persistent_admin_menu(message: Message):
+    if await db.is_owner(message.from_user.id) or await db.is_admin(message.from_user.id):
+        await message.answer("Админ-меню:", reply_markup=get_admin_menu_keyboard())
+    else:
+        await message.answer("У тебя нет доступа к админ-меню.")
 
 
 @dp.message(CommandStart())
@@ -175,11 +207,11 @@ async def cmd_start(message: Message, state: FSMContext):
     existing_user = await db.get_user(user_id)
     print(f"[DEBUG cmd_start] existing_user = {existing_user}")
 
-    if await db.is_owner(user_id):
-        print("[DEBUG cmd_start] → Owner branch")
+    if await db.is_owner(user_id) or await db.is_admin(user_id):
+        print("[DEBUG cmd_start] → Admin/Owner branch")
         await message.answer(
-            "👋 Привет, владелец!\n\nТы имеешь полный доступ. Используй /admin",
-            reply_markup=get_persistent_menu()
+            "👋 Привет! У тебя есть доступ администратора.",
+            reply_markup=get_admin_persistent_menu()
         )
         await message.answer(
             "Выберите действие:",
