@@ -41,6 +41,7 @@ def get_admin_menu_keyboard() -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="📨 Управление рассылками", callback_data="admin:mailings")],
         [InlineKeyboardButton(text="➕ Добавить пользователя по ID", callback_data="admin:add_user_by_id")],
         [InlineKeyboardButton(text="📣 Сообщение всем пользователям", callback_data="admin:broadcast_all")],
+        [InlineKeyboardButton(text="🔗 Проверка связи API с Авито", callback_data="admin:check_avito_api")],
         [InlineKeyboardButton(text="👤 Переключиться на меню пользователя", callback_data="user:menu")],
         [InlineKeyboardButton(text="🔄 Обновить", callback_data="admin:refresh")]
     ])
@@ -497,6 +498,47 @@ async def process_broadcast_confirm(message: Message, state: FSMContext):
 
     await state.clear()
     await message.answer("Меню администратора:", reply_markup=get_admin_menu_keyboard())
+
+
+# ===================== ПРОВЕРКА СВЯЗИ С API АВИТО =====================
+@dp.callback_query(F.data == "admin:check_avito_api")
+async def admin_check_avito_api(callback: CallbackQuery):
+    if not await db.is_owner(callback.from_user.id) and not await db.is_admin(callback.from_user.id):
+        await callback.answer("Доступ запрещён", show_alert=True)
+        return
+
+    from config import AVITO_CLIENT_ID, AVITO_CLIENT_SECRET, AVITO_USER_ID
+    from avito_client import AvitoClient
+
+    await callback.message.edit_text("🔄 Проверяю соединение с API Авито...")
+
+    try:
+        client = AvitoClient(
+            client_id=AVITO_CLIENT_ID,
+            client_secret=AVITO_CLIENT_SECRET,
+            user_id=AVITO_USER_ID
+        )
+        token = await client._get_access_token()  # используем внутренний метод для проверки
+
+        if token:
+            await callback.message.edit_text(
+                "✅ **Связь с API Авито успешна!**\n\n"
+                "Токен получен. API работает корректно.",
+                parse_mode="Markdown"
+            )
+        else:
+            await callback.message.edit_text(
+                "❌ **Не удалось получить токен.**\n\n"
+                "Проверьте правильность `AVITO_CLIENT_ID`, `AVITO_CLIENT_SECRET` и `AVITO_USER_ID`.",
+                parse_mode="Markdown"
+            )
+    except Exception as e:
+        await callback.message.edit_text(
+            f"❌ **Ошибка при проверке API Авито:**\n\n`{str(e)}`",
+            parse_mode="Markdown"
+        )
+
+    await callback.answer()
 
 @dp.callback_query(F.data.startswith("approve:"))
 async def approve_user(callback: CallbackQuery):
