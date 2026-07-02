@@ -1042,18 +1042,32 @@ async def admin_add_store_start(callback: CallbackQuery, state: FSMContext):
 @dp.message(F.text & ~F.command)
 async def process_add_store_name(message: Message, state: FSMContext):
     current_state = await state.get_state()
+    
+    # Защита: если это не наш state — пропускаем
     if current_state != "waiting_for_store_name":
         return
+        
     if not await db.is_owner(message.from_user.id):
         return
+        
     name = message.text.strip()
+    
+    if not name:
+        await message.answer("Название не может быть пустым. Попробуй ещё раз.")
+        return
+    
     store_id = await db.add_store(name=name, short_name=name.split(",")[0] if "," in name else name)
-    await message.answer(f"✅ Филиал добавлен (id: {store_id})\n\n{name}")
+    
+    await message.answer(f"✅ Филиал успешно добавлен!\n\n**{name}** (ID: {store_id})")
     await state.clear()
-    # Показать админ меню заново
-    await message.answer("Меню управления филиалами:", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🏪 Управление филиалами", callback_data="admin:stores")]
-    ]))
+    
+    # Возвращаем в меню управления филиалами
+    await message.answer(
+        "Меню управления филиалами:",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🏪 Управление филиалами", callback_data="admin:stores")]
+        ])
+    )
 
 # ===================== УПРАВЛЕНИЕ РАССЫЛКАМИ (с типами) =====================
 
