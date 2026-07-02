@@ -871,6 +871,100 @@ async def save_stores(callback: CallbackQuery):
 
 # ===================== БЫСТРЫЕ ОТВЕТЫ ДЛЯ ПОЛЬЗОВАТЕЛЕЙ =====================
 
+@dp.callback_query(F.data == "user:unread_avito")
+async def user_unread_avito(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    if not await db.has_access(user_id):
+        await callback.answer("Доступ ограничен", show_alert=True)
+        return
+
+    stores = await db.get_all_stores(enabled_only=True)
+    if not stores:
+        await callback.message.edit_text(
+            "🏪 Пока нет добавленных филиалов.",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="🔙 Назад", callback_data="user:menu")]
+            ])
+        )
+        await callback.answer()
+        return
+
+    # Показываем все магазины (в будущем — только те, на которые подписан пользователь)
+    buttons = []
+    for store in stores:
+        buttons.append([
+            InlineKeyboardButton(
+                text=f"🏪 {store['short_name'] or store['name']}",
+                callback_data=f"unread_store:{store['id']}"
+            )
+        ])
+    buttons.append([
+        InlineKeyboardButton(text="🔙 Назад", callback_data="user:menu")
+    ])
+
+    await callback.message.edit_text(
+        "✉️ <b>Непрочитанные сообщения Авито</b>\n\n"
+        "Выберите точку, по которой хотите посмотреть непрочитанные сообщения:",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
+        parse_mode="HTML"
+    )
+    await callback.answer()
+
+
+@dp.callback_query(F.data.startswith("unread_store:"))
+async def unread_store_chats(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    if not await db.has_access(user_id):
+        await callback.answer("Доступ ограничен", show_alert=True)
+        return
+
+    store_id = int(callback.data.split(":")[1])
+    store = await db.get_store(store_id)
+    store_name = store["short_name"] or store["name"] if store else "Неизвестная точка"
+
+    # Моковые непрочитанные чаты (позже заменим на реальные из Авито)
+    mock_chats = [
+        {"id": 101, "name": "Иванов Иван", "unread": 3, "last": "Здравствуйте, есть ли в наличии..."},
+        {"id": 102, "name": "Петрова Анна", "unread": 1, "last": "Когда привезут заказ?"},
+        {"id": 103, "name": "Сидоров Дмитрий", "unread": 5, "last": "Можно ли забрать сегодня?"},
+    ]
+
+    text = f"✉️ <b>Непрочитанные — {store_name}</b>\n\n"
+    text += "Выберите чат:\n\n"
+
+    buttons = []
+    for chat in mock_chats:
+        text += f"• <b>[{chat['unread']}]</b> {chat['name']} — {chat['last'][:40]}...\n"
+        buttons.append([
+            InlineKeyboardButton(
+                text=f"[{chat['unread']}] {chat['name']}",
+                callback_data=f"unread_chat:{chat['id']}"
+            )
+        ])
+
+    buttons.append([
+        InlineKeyboardButton(text="🔙 Назад к точкам", callback_data="user:unread_avito")
+    ])
+
+    await callback.message.edit_text(text, reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons), parse_mode="HTML")
+    await callback.answer()
+
+
+@dp.callback_query(F.data.startswith("unread_chat:"))
+async def unread_chat_view(callback: CallbackQuery):
+    # Здесь позже будет полноценный просмотр чата + возможность отвечать
+    await callback.message.edit_text(
+        "💬 <b>Просмотр чата</b>\n\n"
+        "Здесь будет полная история переписки и возможность ответить.\n\n"
+        "(Функция в разработке — скоро будет полностью рабочая)",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🔙 Назад", callback_data="user:unread_avito")]
+        ]),
+        parse_mode="HTML"
+    )
+    await callback.answer()
+
+
 @dp.callback_query(F.data == "user:quick_replies")
 async def user_quick_replies(callback: CallbackQuery):
     user_id = callback.from_user.id
